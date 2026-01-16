@@ -21,6 +21,22 @@ app.use((req, res, next) => {
   next();
 });
 
+// Root route
+app.get('/', (req, res) => {
+  res.json({
+    name: 'FamilyApp API',
+    version: '1.0.0',
+    status: 'running',
+    endpoints: {
+      auth: '/api/auth',
+      calendar: '/api/calendar',
+      shopping: '/api/shopping',
+      chat: '/api/chat',
+      health: '/api/health'
+    }
+  });
+});
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/calendar', calendarRoutes);
