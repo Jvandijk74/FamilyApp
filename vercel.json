@@ -1,7 +1,6 @@
 {
   "version": 2,
-  "installCommand": "npm run install:all",
-  "buildCommand": "npm run build",
+  "buildCommand": "npm install && cd frontend && npm run build",
   "outputDirectory": "frontend/dist",
   "functions": {
     "backend/server.js": {
