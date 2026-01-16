@@ -25,9 +25,9 @@ Een moderne familie-app voor Jesse en Monika om samen te werken aan agenda's, bo
 
 ### Backend
 - Node.js + Express
-- Supabase (PostgreSQL) database
+- Supabase (PostgreSQL) cloud database
 - JWT authenticatie
-- Claude AI (Anthropic) voor chat functionaliteit
+- **Google Gemini AI** voor chat functionaliteit (gratis tier!)
 
 ### Frontend
 - React 18
@@ -36,12 +36,39 @@ Een moderne familie-app voor Jesse en Monika om samen te werken aan agenda's, bo
 - Tailwind CSS voor styling
 - Axios voor API communicatie
 
-## 📦 Installatie
+---
+
+## ⚡ Deployment via Vercel (Aanbevolen!)
+
+**Je hoeft NIETS lokaal te installeren!** Vercel doet alles automatisch via Git.
+
+### Wat je nodig hebt:
+1. ✅ GitHub account (heb je al!)
+2. ✅ Vercel account (gratis op https://vercel.com)
+3. ✅ 5 minuten tijd
+
+### Stappen:
+1. **Database Setup** (1x, 2 minuten)
+   - Ga naar Supabase en voer het SQL script uit
+   - Zie [SUPABASE_SETUP.md](./SUPABASE_SETUP.md)
+
+2. **Deploy via Vercel** (3 minuten)
+   - Volg [VERCEL_DEPLOYMENT.md](./VERCEL_DEPLOYMENT.md)
+   - Alle environment variables staan in [ENVIRONMENT_VARIABLES.txt](./ENVIRONMENT_VARIABLES.txt)
+
+**Klaar!** Je app is live zonder lokale setup! 🎉
+
+---
+
+## 💻 Lokale Ontwikkeling (Optioneel)
+
+*Alleen nodig als je de code lokaal wilt testen of aanpassen*
+
+<details>
+<summary>Klik hier voor lokale installatie instructies</summary>
 
 ### Vereisten
 - Node.js 18+ en npm
-- Een Supabase account en project
-- Een Anthropic API key (voor AI chat functionaliteit)
 
 ### 1. Repository clonen
 
@@ -50,52 +77,28 @@ git clone <repository-url>
 cd FamilyApp
 ```
 
-### 2. Supabase Database Setup
-
-**⚠️ BELANGRIJK: Doe dit eerst!**
-
-Volg de instructies in [SUPABASE_SETUP.md](./SUPABASE_SETUP.md) om je Supabase database op te zetten.
-
-Samenvatting:
-1. Ga naar https://supabase.com/dashboard/project/prjhsnkudzmphnnhyicj
-2. Open de SQL Editor
-3. Voer de SQL uit het bestand `backend/supabase-migration.sql` uit
-
-### 3. Backend Setup
+### 2. Backend Setup
 
 ```bash
 cd backend
-
-# Dependencies installeren
 npm install
-
-# .env file is al geconfigureerd met Supabase credentials
-# Voeg alleen je Anthropic API key toe
-nano .env
 ```
 
-Bewerk `.env` en voeg je Anthropic API key toe:
+Bewerk `backend/.env`:
 ```
-ANTHROPIC_API_KEY=sk-ant-xxxxx
+GOOGLE_API_KEY=AIzaSyBuU77JaeqExvJAzGoVFkkGUaseKpQ6SbQ
 ```
 
-Je kunt een API key krijgen op: https://console.anthropic.com/
-
-### 4. Frontend Setup
+### 3. Frontend Setup
 
 ```bash
-cd ../frontend
-
-# Dependencies installeren
+cd frontend
 npm install
-
-# .env file is al geconfigureerd
 ```
 
-## 🎯 Applicatie Starten
+### 4. Applicatie Starten
 
-### Backend starten
-
+**Backend:**
 ```bash
 cd backend
 npm run dev
@@ -103,14 +106,7 @@ npm run dev
 
 De backend draait nu op: http://localhost:3000
 
-Je zou moeten zien:
-```
-✅ Supabase client initialized successfully
-🔗 Connected to: https://prjhsnkudzmphnnhyicj.supabase.co
-```
-
-### Frontend starten (in een nieuwe terminal)
-
+**Frontend:**
 ```bash
 cd frontend
 npm run dev
@@ -118,13 +114,9 @@ npm run dev
 
 De frontend draait nu op: http://localhost:5173
 
-## 👥 Account Aanmaken
+</details>
 
-1. Ga naar http://localhost:5173
-2. Klik op "Registreer hier"
-3. Maak accounts aan voor beide gebruikers:
-   - Jesse
-   - Monika
+---
 
 ## 📱 Gebruik
 
@@ -215,21 +207,29 @@ Zie [SUPABASE_SETUP.md](./SUPABASE_SETUP.md) voor het complete schema.
 
 ## 🚀 Production Deployment
 
-Voor production deployment:
+**Aanbevolen: Vercel**
+
+De makkelijkste manier is via Vercel (geen terminal nodig!):
+
+👉 **Volg:** [VERCEL_DEPLOYMENT.md](./VERCEL_DEPLOYMENT.md)
+
+<details>
+<summary>Handmatige deployment naar andere platformen</summary>
 
 1. **Supabase Database**:
    - Database is al in de cloud en production-ready!
-   - Geen extra configuratie nodig
+   - Voer het SQL script uit (zie SUPABASE_SETUP.md)
 
-2. **Backend**:
-   - Verander `JWT_SECRET` in `.env` naar een sterke random string
-   - Deploy naar een Node.js hosting platform (bijv. Railway, Render, Heroku)
-   - Voeg environment variabelen toe (SUPABASE_URL, SUPABASE_ANON_KEY, JWT_SECRET, ANTHROPIC_API_KEY)
+2. **Backend** (bijv. Railway, Render, Heroku):
+   - Deploy de `backend` folder
+   - Voeg environment variabelen toe: `PORT`, `JWT_SECRET`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `GOOGLE_API_KEY`
 
-3. **Frontend**:
-   - Update `VITE_API_URL` naar je production API URL
-   - Build de frontend: `npm run build`
-   - Deploy de `dist` folder naar een static hosting (bijv. Netlify, Vercel)
+3. **Frontend** (bijv. Netlify, Vercel):
+   - Build: `npm run build` in frontend folder
+   - Deploy de `dist` folder
+   - Voeg environment variable toe: `VITE_API_URL` (je backend URL + /api)
+
+</details>
 
 ## 📝 TODO / Toekomstige Features
 

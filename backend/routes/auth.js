@@ -1,97 +1,61 @@
 const express = require('express');
-const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const supabase = require('../database');
 const { JWT_SECRET } = require('../middleware/auth');
 
 const router = express.Router();
 
-// Register new user
-router.post('/register', async (req, res) => {
+// Get all users (Jesse and Monika)
+router.get('/users', async (req, res) => {
   try {
-    const { name, email, password } = req.body;
-
-    if (!name || !email || !password) {
-      return res.status(400).json({ error: 'All fields are required' });
-    }
-
-    // Check if user already exists
-    const { data: existingUser } = await supabase
+    const { data: users, error } = await supabase
       .from('users')
-      .select('*')
-      .eq('email', email)
-      .single();
-
-    if (existingUser) {
-      return res.status(400).json({ error: 'User already exists' });
-    }
-
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Insert user
-    const { data: newUser, error } = await supabase
-      .from('users')
-      .insert([{ name, email, password: hashedPassword }])
-      .select()
-      .single();
+      .select('id, name')
+      .order('name');
 
     if (error) {
-      console.error('Supabase insert error:', error);
-      return res.status(500).json({ error: 'Registration failed' });
+      console.error('Supabase select error:', error);
+      return res.status(500).json({ error: 'Failed to fetch users' });
     }
 
-    // Generate token
-    const token = jwt.sign({ id: newUser.id, email, name }, JWT_SECRET, { expiresIn: '7d' });
-
-    res.status(201).json({
-      message: 'User registered successfully',
-      token,
-      user: { id: newUser.id, name, email }
-    });
+    res.json({ users });
   } catch (error) {
-    console.error('Registration error:', error);
-    res.status(500).json({ error: 'Registration failed' });
+    console.error('Get users error:', error);
+    res.status(500).json({ error: 'Failed to fetch users' });
   }
 });
 
-// Login
-router.post('/login', async (req, res) => {
+// Select user (no password needed)
+router.post('/select', async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { userId } = req.body;
 
-    if (!email || !password) {
-      return res.status(400).json({ error: 'Email and password are required' });
+    if (!userId) {
+      return res.status(400).json({ error: 'User ID is required' });
     }
 
     // Find user
     const { data: user, error } = await supabase
       .from('users')
-      .select('*')
-      .eq('email', email)
+      .select('id, name, email')
+      .eq('id', userId)
       .single();
 
     if (error || !user) {
-      return res.status(401).json({ error: 'Invalid credentials' });
-    }
-
-    // Check password
-    const validPassword = await bcrypt.compare(password, user.password);
-    if (!validPassword) {
-      return res.status(401).json({ error: 'Invalid credentials' });
+      return res.status(404).json({ error: 'User not found' });
     }
 
     // Generate token
-    const token = jwt.sign({ id: user.id, email: user.email, name: user.name }, JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign({ id: user.id, email: user.email, name: user.name }, JWT_SECRET, { expiresIn: '30d' });
 
     res.json({
-      message: 'Login successful',
+      message: 'User selected successfully',
       token,
       user: { id: user.id, name: user.name, email: user.email }
     });
   } catch (error) {
-    console.error('Login error:', error);
-    res.status(500).json({ error: 'Login failed' });
+    console.error('Select user error:', error);
+    res.status(500).json({ error: 'User selection failed' });
   }
 });
 
@@ -123,3 +87,4 @@ router.get('/me', async (req, res) => {
 });
 
 module.exports = router;
+

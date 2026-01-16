@@ -8,10 +8,17 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE TABLE IF NOT EXISTS users (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   name TEXT NOT NULL,
-  email TEXT UNIQUE NOT NULL,
-  password TEXT NOT NULL,
+  email TEXT UNIQUE,
+  password TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Insert Jesse and Monika (no passwords needed)
+INSERT INTO users (name, email)
+VALUES
+  ('Jesse', 'jesse@familyapp.local'),
+  ('Monika', 'monika@familyapp.local')
+ON CONFLICT (email) DO NOTHING;
 
 -- Calendar events table
 CREATE TABLE IF NOT EXISTS calendar_events (

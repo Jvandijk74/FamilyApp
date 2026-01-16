@@ -26,9 +26,9 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   };
 
-  const login = async (email, password) => {
+  const selectUser = async (userId) => {
     try {
-      const response = await authAPI.login({ email, password });
+      const response = await authAPI.selectUser(userId);
       const { token, user } = response.data;
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
@@ -37,23 +37,7 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       return {
         success: false,
-        error: error.response?.data?.error || 'Login failed'
-      };
-    }
-  };
-
-  const register = async (name, email, password) => {
-    try {
-      const response = await authAPI.register({ name, email, password });
-      const { token, user } = response.data;
-      localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(user));
-      setUser(user);
-      return { success: true };
-    } catch (error) {
-      return {
-        success: false,
-        error: error.response?.data?.error || 'Registration failed'
+        error: error.response?.data?.error || 'User selection failed'
       };
     }
   };
@@ -65,7 +49,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, loading }}>
+    <AuthContext.Provider value={{ user, selectUser, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );
