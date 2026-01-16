@@ -2,6 +2,16 @@
 
 Een moderne familie-app voor Jesse en Monika om samen te werken aan agenda's, boodschappenlijsten en gebruik te maken van AI-assistentie.
 
+## 🚀 Snel Starten - Vercel Deployment
+
+**Wil je de app direct online zetten via Vercel?**
+
+👉 **Volg de complete guide:** [VERCEL_DEPLOYMENT.md](./VERCEL_DEPLOYMENT.md)
+
+📋 **Environment variables nodig?** Zie [ENVIRONMENT_VARIABLES.txt](./ENVIRONMENT_VARIABLES.txt)
+
+---
+
 ## ✨ Functies
 
 - **📅 Agenda**: Beheer gezamenlijke afspraken en activiteiten
