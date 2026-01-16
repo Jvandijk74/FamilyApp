@@ -47,24 +47,27 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Internal server error' });
 });
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`\n🚀 FamilyApp Backend Server`);
-  console.log(`📡 Server running on http://localhost:${PORT}`);
-  console.log(`🔗 API endpoints available at http://localhost:${PORT}/api`);
-  console.log(`\nAvailable routes:`);
-  console.log(`  - POST /api/auth/register - Register new user`);
-  console.log(`  - POST /api/auth/login - Login`);
-  console.log(`  - GET  /api/auth/me - Get current user`);
-  console.log(`  - GET  /api/calendar - Get all events`);
-  console.log(`  - GET  /api/calendar/today - Get today's events`);
-  console.log(`  - POST /api/calendar - Create event`);
-  console.log(`  - GET  /api/shopping - Get all shopping items`);
-  console.log(`  - GET  /api/shopping/active - Get active items`);
-  console.log(`  - POST /api/shopping - Create shopping item`);
-  console.log(`  - POST /api/chat - Chat with AI assistant`);
-  console.log(`  - GET  /api/chat/history - Get chat history`);
-  console.log(`\n💡 Don't forget to set ANTHROPIC_API_KEY in .env file for AI chat!\n`);
-});
+// Start server (only for local development)
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`\n🚀 FamilyApp Backend Server`);
+    console.log(`📡 Server running on http://localhost:${PORT}`);
+    console.log(`🔗 API endpoints available at http://localhost:${PORT}/api`);
+    console.log(`\nAvailable routes:`);
+    console.log(`  - POST /api/auth/register - Register new user`);
+    console.log(`  - POST /api/auth/login - Login`);
+    console.log(`  - GET  /api/auth/me - Get current user`);
+    console.log(`  - GET  /api/calendar - Get all events`);
+    console.log(`  - GET  /api/calendar/today - Get today's events`);
+    console.log(`  - POST /api/calendar - Create event`);
+    console.log(`  - GET  /api/shopping - Get all shopping items`);
+    console.log(`  - GET  /api/shopping/active - Get active items`);
+    console.log(`  - POST /api/shopping - Create shopping item`);
+    console.log(`  - POST /api/chat - Chat with AI assistant`);
+    console.log(`  - GET  /api/chat/history - Get chat history`);
+    console.log(`\n💡 Don't forget to set GOOGLE_API_KEY in .env file for AI chat!\n`);
+  });
+}
 
+// Export for Vercel
 module.exports = app;
