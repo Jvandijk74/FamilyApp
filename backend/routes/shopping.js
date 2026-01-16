@@ -1,5 +1,5 @@
 const express = require('express');
-const db = require('../database');
+const supabase = require('../database');
 const { authenticateToken } = require('../middleware/auth');
 
 const router = express.Router();
@@ -8,18 +8,26 @@ const router = express.Router();
 router.use(authenticateToken);
 
 // Get all shopping items
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   try {
-    const items = db.prepare(`
-      SELECT
-        shopping_items.*,
-        users.name as user_name
-      FROM shopping_items
-      JOIN users ON shopping_items.user_id = users.id
-      ORDER BY is_completed ASC, created_at DESC
-    `).all();
+    const { data: items, error } = await supabase
+      .from('shopping_items')
+      .select(`
+        *,
+        users (name)
+      `)
+      .order('is_completed', { ascending: true })
+      .order('created_at', { ascending: false });
 
-    res.json({ items });
+    if (error) throw error;
+
+    // Transform data to match expected format
+    const transformedItems = items.map(item => ({
+      ...item,
+      user_name: item.users?.name
+    }));
+
+    res.json({ items: transformedItems });
   } catch (error) {
     console.error('Error fetching shopping items:', error);
     res.status(500).json({ error: 'Failed to fetch shopping items' });
@@ -27,19 +35,26 @@ router.get('/', (req, res) => {
 });
 
 // Get active (not completed) shopping items
-router.get('/active', (req, res) => {
+router.get('/active', async (req, res) => {
   try {
-    const items = db.prepare(`
-      SELECT
-        shopping_items.*,
-        users.name as user_name
-      FROM shopping_items
-      JOIN users ON shopping_items.user_id = users.id
-      WHERE is_completed = 0
-      ORDER BY created_at DESC
-    `).all();
+    const { data: items, error } = await supabase
+      .from('shopping_items')
+      .select(`
+        *,
+        users (name)
+      `)
+      .eq('is_completed', false)
+      .order('created_at', { ascending: false });
 
-    res.json({ items });
+    if (error) throw error;
+
+    // Transform data to match expected format
+    const transformedItems = items.map(item => ({
+      ...item,
+      user_name: item.users?.name
+    }));
+
+    res.json({ items: transformedItems });
   } catch (error) {
     console.error('Error fetching active shopping items:', error);
     res.status(500).json({ error: 'Failed to fetch active shopping items' });
@@ -47,7 +62,7 @@ router.get('/active', (req, res) => {
 });
 
 // Create new shopping item
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
   try {
     const { name, quantity, category } = req.body;
     const userId = req.user.id;
@@ -56,21 +71,29 @@ router.post('/', (req, res) => {
       return res.status(400).json({ error: 'Item name is required' });
     }
 
-    const result = db.prepare(`
-      INSERT INTO shopping_items (name, quantity, category, user_id)
-      VALUES (?, ?, ?, ?)
-    `).run(name, quantity || null, category || null, userId);
+    const { data: newItem, error } = await supabase
+      .from('shopping_items')
+      .insert([{
+        name,
+        quantity: quantity || null,
+        category: category || null,
+        user_id: userId
+      }])
+      .select(`
+        *,
+        users (name)
+      `)
+      .single();
 
-    const newItem = db.prepare(`
-      SELECT
-        shopping_items.*,
-        users.name as user_name
-      FROM shopping_items
-      JOIN users ON shopping_items.user_id = users.id
-      WHERE shopping_items.id = ?
-    `).get(result.lastInsertRowid);
+    if (error) throw error;
 
-    res.status(201).json({ item: newItem });
+    // Transform data to match expected format
+    const transformedItem = {
+      ...newItem,
+      user_name: newItem.users?.name
+    };
+
+    res.status(201).json({ item: transformedItem });
   } catch (error) {
     console.error('Error creating shopping item:', error);
     res.status(500).json({ error: 'Failed to create shopping item' });
@@ -78,38 +101,47 @@ router.post('/', (req, res) => {
 });
 
 // Update shopping item
-router.put('/:id', (req, res) => {
+router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const { name, quantity, category, is_completed } = req.body;
 
-    const item = db.prepare('SELECT * FROM shopping_items WHERE id = ?').get(id);
-    if (!item) {
+    // Check if item exists
+    const { data: existingItem, error: fetchError } = await supabase
+      .from('shopping_items')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (fetchError || !existingItem) {
       return res.status(404).json({ error: 'Item not found' });
     }
 
-    db.prepare(`
-      UPDATE shopping_items
-      SET name = ?, quantity = ?, category = ?, is_completed = ?, updated_at = CURRENT_TIMESTAMP
-      WHERE id = ?
-    `).run(
-      name !== undefined ? name : item.name,
-      quantity !== undefined ? quantity : item.quantity,
-      category !== undefined ? category : item.category,
-      is_completed !== undefined ? is_completed : item.is_completed,
-      id
-    );
+    // Update item
+    const { data: updatedItem, error } = await supabase
+      .from('shopping_items')
+      .update({
+        name: name !== undefined ? name : existingItem.name,
+        quantity: quantity !== undefined ? quantity : existingItem.quantity,
+        category: category !== undefined ? category : existingItem.category,
+        is_completed: is_completed !== undefined ? is_completed : existingItem.is_completed
+      })
+      .eq('id', id)
+      .select(`
+        *,
+        users (name)
+      `)
+      .single();
 
-    const updatedItem = db.prepare(`
-      SELECT
-        shopping_items.*,
-        users.name as user_name
-      FROM shopping_items
-      JOIN users ON shopping_items.user_id = users.id
-      WHERE shopping_items.id = ?
-    `).get(id);
+    if (error) throw error;
 
-    res.json({ item: updatedItem });
+    // Transform data to match expected format
+    const transformedItem = {
+      ...updatedItem,
+      user_name: updatedItem.users?.name
+    };
+
+    res.json({ item: transformedItem });
   } catch (error) {
     console.error('Error updating shopping item:', error);
     res.status(500).json({ error: 'Failed to update shopping item' });
@@ -117,32 +149,43 @@ router.put('/:id', (req, res) => {
 });
 
 // Toggle completion status
-router.patch('/:id/toggle', (req, res) => {
+router.patch('/:id/toggle', async (req, res) => {
   try {
     const { id } = req.params;
 
-    const item = db.prepare('SELECT * FROM shopping_items WHERE id = ?').get(id);
-    if (!item) {
+    // Check if item exists
+    const { data: existingItem, error: fetchError } = await supabase
+      .from('shopping_items')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (fetchError || !existingItem) {
       return res.status(404).json({ error: 'Item not found' });
     }
 
-    const newStatus = item.is_completed ? 0 : 1;
-    db.prepare(`
-      UPDATE shopping_items
-      SET is_completed = ?, updated_at = CURRENT_TIMESTAMP
-      WHERE id = ?
-    `).run(newStatus, id);
+    const newStatus = !existingItem.is_completed;
 
-    const updatedItem = db.prepare(`
-      SELECT
-        shopping_items.*,
-        users.name as user_name
-      FROM shopping_items
-      JOIN users ON shopping_items.user_id = users.id
-      WHERE shopping_items.id = ?
-    `).get(id);
+    // Update item
+    const { data: updatedItem, error } = await supabase
+      .from('shopping_items')
+      .update({ is_completed: newStatus })
+      .eq('id', id)
+      .select(`
+        *,
+        users (name)
+      `)
+      .single();
 
-    res.json({ item: updatedItem });
+    if (error) throw error;
+
+    // Transform data to match expected format
+    const transformedItem = {
+      ...updatedItem,
+      user_name: updatedItem.users?.name
+    };
+
+    res.json({ item: transformedItem });
   } catch (error) {
     console.error('Error toggling shopping item:', error);
     res.status(500).json({ error: 'Failed to toggle shopping item' });
@@ -150,16 +193,28 @@ router.patch('/:id/toggle', (req, res) => {
 });
 
 // Delete shopping item
-router.delete('/:id', (req, res) => {
+router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
 
-    const item = db.prepare('SELECT * FROM shopping_items WHERE id = ?').get(id);
-    if (!item) {
+    // Check if item exists
+    const { data: existingItem, error: fetchError } = await supabase
+      .from('shopping_items')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (fetchError || !existingItem) {
       return res.status(404).json({ error: 'Item not found' });
     }
 
-    db.prepare('DELETE FROM shopping_items WHERE id = ?').run(id);
+    // Delete item
+    const { error } = await supabase
+      .from('shopping_items')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
 
     res.json({ message: 'Item deleted successfully' });
   } catch (error) {
@@ -169,9 +224,15 @@ router.delete('/:id', (req, res) => {
 });
 
 // Clear all completed items
-router.delete('/completed/clear', (req, res) => {
+router.delete('/completed/clear', async (req, res) => {
   try {
-    db.prepare('DELETE FROM shopping_items WHERE is_completed = 1').run();
+    const { error } = await supabase
+      .from('shopping_items')
+      .delete()
+      .eq('is_completed', true);
+
+    if (error) throw error;
+
     res.json({ message: 'Completed items cleared successfully' });
   } catch (error) {
     console.error('Error clearing completed items:', error);

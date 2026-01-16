@@ -1,6 +1,6 @@
 const express = require('express');
-const Anthropic = require('@anthropic-ai/sdk');
-const db = require('../database');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
+const supabase = require('../database');
 const { authenticateToken } = require('../middleware/auth');
 
 const router = express.Router();
@@ -8,62 +8,61 @@ const router = express.Router();
 // All routes require authentication
 router.use(authenticateToken);
 
-// Initialize Anthropic client
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY || '',
-});
+// Initialize Google Gemini client
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY || '');
 
 // Helper function to get context data
-function getContextData() {
+async function getContextData() {
   // Get today's events
   const today = new Date().toISOString().split('T')[0];
-  const todayEvents = db.prepare(`
-    SELECT
-      calendar_events.*,
-      users.name as user_name
-    FROM calendar_events
-    JOIN users ON calendar_events.user_id = users.id
-    WHERE DATE(start_date) = DATE(?)
-    ORDER BY start_date ASC
-  `).all(today);
+  const { data: todayEvents } = await supabase
+    .from('calendar_events')
+    .select(`
+      *,
+      users (name)
+    `)
+    .gte('start_date', `${today}T00:00:00`)
+    .lt('start_date', `${today}T23:59:59`)
+    .order('start_date', { ascending: true });
 
   // Get upcoming events (next 7 days)
-  const upcomingEvents = db.prepare(`
-    SELECT
-      calendar_events.*,
-      users.name as user_name
-    FROM calendar_events
-    JOIN users ON calendar_events.user_id = users.id
-    WHERE DATE(start_date) >= DATE(?) AND DATE(start_date) <= DATE(?, '+7 days')
-    ORDER BY start_date ASC
-  `).all(today, today);
+  const nextWeek = new Date();
+  nextWeek.setDate(nextWeek.getDate() + 7);
+  const { data: upcomingEvents } = await supabase
+    .from('calendar_events')
+    .select(`
+      *,
+      users (name)
+    `)
+    .gte('start_date', `${today}T00:00:00`)
+    .lte('start_date', nextWeek.toISOString())
+    .order('start_date', { ascending: true });
 
   // Get active shopping items
-  const activeShoppingItems = db.prepare(`
-    SELECT
-      shopping_items.*,
-      users.name as user_name
-    FROM shopping_items
-    JOIN users ON shopping_items.user_id = users.id
-    WHERE is_completed = 0
-    ORDER BY created_at DESC
-  `).all();
+  const { data: activeShoppingItems } = await supabase
+    .from('shopping_items')
+    .select(`
+      *,
+      users (name)
+    `)
+    .eq('is_completed', false)
+    .order('created_at', { ascending: false });
 
   // Get all shopping items for context
-  const allShoppingItems = db.prepare(`
-    SELECT
-      shopping_items.*,
-      users.name as user_name
-    FROM shopping_items
-    JOIN users ON shopping_items.user_id = users.id
-    ORDER BY is_completed ASC, created_at DESC
-  `).all();
+  const { data: allShoppingItems } = await supabase
+    .from('shopping_items')
+    .select(`
+      *,
+      users (name)
+    `)
+    .order('is_completed', { ascending: true })
+    .order('created_at', { ascending: false });
 
   return {
-    todayEvents,
-    upcomingEvents,
-    activeShoppingItems,
-    allShoppingItems
+    todayEvents: todayEvents || [],
+    upcomingEvents: upcomingEvents || [],
+    activeShoppingItems: activeShoppingItems || [],
+    allShoppingItems: allShoppingItems || []
   };
 }
 
@@ -88,7 +87,7 @@ CONTEXT INFORMATIE:
       prompt += `- ${startTime}: ${event.title}`;
       if (event.description) prompt += ` (${event.description})`;
       if (event.location) prompt += ` @ ${event.location}`;
-      prompt += ` [toegevoegd door ${event.user_name}]\n`;
+      prompt += ` [toegevoegd door ${event.users?.name}]\n`;
     });
   }
 
@@ -101,7 +100,7 @@ CONTEXT INFORMATIE:
       const time = new Date(event.start_date).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
       prompt += `- ${date} ${time}: ${event.title}`;
       if (event.description) prompt += ` (${event.description})`;
-      prompt += ` [toegevoegd door ${event.user_name}]\n`;
+      prompt += ` [toegevoegd door ${event.users?.name}]\n`;
     });
   }
 
@@ -113,7 +112,7 @@ CONTEXT INFORMATIE:
       prompt += `- ${item.name}`;
       if (item.quantity) prompt += ` (${item.quantity})`;
       if (item.category) prompt += ` [${item.category}]`;
-      prompt += ` - toegevoegd door ${item.user_name}\n`;
+      prompt += ` - toegevoegd door ${item.users?.name}\n`;
     });
   }
 
@@ -136,52 +135,66 @@ router.post('/', async (req, res) => {
     }
 
     // Check if API key is configured
-    if (!process.env.ANTHROPIC_API_KEY) {
+    if (!process.env.GOOGLE_API_KEY) {
       return res.status(500).json({
-        error: 'AI chat is not configured. Please add ANTHROPIC_API_KEY to environment variables.'
+        error: 'AI chat is not configured. Please add GOOGLE_API_KEY to environment variables.'
       });
     }
 
     // Get context data
-    const contextData = getContextData();
+    const contextData = await getContextData();
 
     // Create system prompt with context
     const systemPrompt = createSystemPrompt(contextData, userName);
 
     // Get recent chat history for context (last 5 messages)
-    const recentHistory = db.prepare(`
-      SELECT message, response
-      FROM chat_history
-      WHERE user_id = ?
-      ORDER BY created_at DESC
-      LIMIT 5
-    `).all(userId);
+    const { data: recentHistory } = await supabase
+      .from('chat_history')
+      .select('message, response')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(5);
 
-    // Build messages array (reverse to get chronological order)
-    const messages = [];
-    recentHistory.reverse().forEach(chat => {
-      messages.push({ role: 'user', content: chat.message });
-      messages.push({ role: 'assistant', content: chat.response });
+    // Get the Gemini model
+    const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+
+    // Build chat history for Gemini
+    const chatHistory = [];
+    if (recentHistory) {
+      recentHistory.reverse().forEach(chat => {
+        chatHistory.push({
+          role: 'user',
+          parts: [{ text: chat.message }]
+        });
+        chatHistory.push({
+          role: 'model',
+          parts: [{ text: chat.response }]
+        });
+      });
+    }
+
+    // Start chat with history and system prompt
+    const chat = model.startChat({
+      history: chatHistory,
+      generationConfig: {
+        maxOutputTokens: 1024,
+        temperature: 0.7,
+      },
     });
 
-    // Add current message
-    messages.push({ role: 'user', content: message });
-
-    // Call Claude API
-    const response = await anthropic.messages.create({
-      model: 'claude-3-5-sonnet-20241022',
-      max_tokens: 1024,
-      system: systemPrompt,
-      messages: messages
-    });
-
-    const aiResponse = response.content[0].text;
+    // Send message with system prompt prepended
+    const fullMessage = `${systemPrompt}\n\nGebruiker vraagt: ${message}`;
+    const result = await chat.sendMessage(fullMessage);
+    const aiResponse = result.response.text();
 
     // Save chat history
-    db.prepare(`
-      INSERT INTO chat_history (user_id, message, response)
-      VALUES (?, ?, ?)
-    `).run(userId, message, aiResponse);
+    await supabase
+      .from('chat_history')
+      .insert([{
+        user_id: userId,
+        message,
+        response: aiResponse
+      }]);
 
     res.json({
       message: aiResponse,
@@ -193,34 +206,41 @@ router.post('/', async (req, res) => {
   } catch (error) {
     console.error('Error in chat:', error);
 
-    if (error.status === 401) {
+    if (error.message?.includes('API key')) {
       return res.status(500).json({
-        error: 'Invalid API key. Please check your ANTHROPIC_API_KEY.'
+        error: 'Invalid API key. Please check your GOOGLE_API_KEY.'
       });
     }
 
-    res.status(500).json({ error: 'Failed to process chat message' });
+    res.status(500).json({ error: 'Failed to process chat message: ' + error.message });
   }
 });
 
 // Get chat history
-router.get('/history', (req, res) => {
+router.get('/history', async (req, res) => {
   try {
     const userId = req.user.id;
     const limit = parseInt(req.query.limit) || 20;
 
-    const history = db.prepare(`
-      SELECT
-        chat_history.*,
-        users.name as user_name
-      FROM chat_history
-      JOIN users ON chat_history.user_id = users.id
-      WHERE user_id = ?
-      ORDER BY created_at DESC
-      LIMIT ?
-    `).all(userId, limit);
+    const { data: history, error } = await supabase
+      .from('chat_history')
+      .select(`
+        *,
+        users (name)
+      `)
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(limit);
 
-    res.json({ history: history.reverse() });
+    if (error) throw error;
+
+    // Transform data to match expected format
+    const transformedHistory = (history || []).map(chat => ({
+      ...chat,
+      user_name: chat.users?.name
+    }));
+
+    res.json({ history: transformedHistory.reverse() });
   } catch (error) {
     console.error('Error fetching chat history:', error);
     res.status(500).json({ error: 'Failed to fetch chat history' });
@@ -228,10 +248,17 @@ router.get('/history', (req, res) => {
 });
 
 // Clear chat history
-router.delete('/history', (req, res) => {
+router.delete('/history', async (req, res) => {
   try {
     const userId = req.user.id;
-    db.prepare('DELETE FROM chat_history WHERE user_id = ?').run(userId);
+
+    const { error } = await supabase
+      .from('chat_history')
+      .delete()
+      .eq('user_id', userId);
+
+    if (error) throw error;
+
     res.json({ message: 'Chat history cleared successfully' });
   } catch (error) {
     console.error('Error clearing chat history:', error);

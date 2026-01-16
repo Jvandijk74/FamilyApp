@@ -1,0 +1,86 @@
+===========================================
+  BACKEND ENVIRONMENT VARIABLES (Vercel)
+===========================================
+
+Voeg deze toe in Vercel bij je BACKEND project:
+
+NAME: PORT
+VALUE: 3000
+
+NAME: JWT_SECRET
+VALUE: familie-app-jwt-production-secret-2024-verander-dit-naar-random-string
+
+NAME: SUPABASE_URL
+VALUE: https://prjhsnkudzmphnnhyicj.supabase.co
+
+NAME: SUPABASE_ANON_KEY
+VALUE: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InByamhzbmt1ZHptcGhubmh5aWNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg1NDg2MTMsImV4cCI6MjA4NDEyNDYxM30.5AFNZK5Ae0nJdPLyrCqo5dg9-TAOuRU_1p0_ro2SZyE
+
+NAME: GOOGLE_API_KEY
+VALUE: AIzaSyBuU77JaeqExvJAzGoVFkkGUaseKpQ6SbQ
+
+
+============================================
+  FRONTEND ENVIRONMENT VARIABLES (Vercel)
+============================================
+
+Voeg deze toe in Vercel bij je FRONTEND project:
+
+NAME: VITE_API_URL
+VALUE: https://jouw-backend-url.vercel.app/api
+(Vervang 'jouw-backend-url' met je echte backend URL!)
+
+
+============================================
+  QUICK COPY-PASTE FORMAT
+============================================
+
+Voor als Vercel een bulk import accepteert:
+
+--- BACKEND ---
+PORT=3000
+JWT_SECRET=familie-app-jwt-production-secret-2024-verander-dit-naar-random-string
+SUPABASE_URL=https://prjhsnkudzmphnnhyicj.supabase.co
+SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InByamhzbmt1ZHptcGhubmh5aWNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg1NDg2MTMsImV4cCI6MjA4NDEyNDYxM30.5AFNZK5Ae0nJdPLyrCqo5dg9-TAOuRU_1p0_ro2SZyE
+GOOGLE_API_KEY=AIzaSyBuU77JaeqExvJAzGoVFkkGUaseKpQ6SbQ
+
+--- FRONTEND ---
+VITE_API_URL=https://jouw-backend-url.vercel.app/api
+
+
+============================================
+  BELANGRIJKE OPMERKINGEN
+============================================
+
+⚠️  JWT_SECRET:
+    Verander dit naar een sterke random string!
+    Gebruik https://randomkeygen.com/
+
+✅  GOOGLE_API_KEY:
+    Je Google Gemini API key is al ingevuld!
+    Gratis te gebruiken met dagelijkse limiet
+    Krijg je van: https://aistudio.google.com/app/apikey
+
+⚠️  VITE_API_URL:
+    Moet eindigen met /api
+    Gebruik de URL van je BACKEND deployment
+    Voorbeeld: https://familyapp-backend-abc123.vercel.app/api
+
+✅  SUPABASE credentials zijn al ingevuld en werken!
+
+
+============================================
+  GOOGLE GEMINI API INFO
+============================================
+
+De app gebruikt nu Google Gemini (gemini-pro model) in plaats van Anthropic Claude.
+
+Voordelen:
+- ✅ Gratis tier beschikbaar (60 requests per minuut)
+- ✅ Geen credit card nodig voor gratis gebruik
+- ✅ Goede Nederlands support
+- ✅ Snel en betrouwbaar
+
+Je API key: AIzaSyBuU77JaeqExvJAzGoVFkkGUaseKpQ6SbQ
+
+Gebruik checken: https://aistudio.google.com/app/apikey
