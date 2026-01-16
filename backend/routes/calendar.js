@@ -1,5 +1,5 @@
 const express = require('express');
-const db = require('../database');
+const supabase = require('../database');
 const { authenticateToken } = require('../middleware/auth');
 
 const router = express.Router();
@@ -8,18 +8,25 @@ const router = express.Router();
 router.use(authenticateToken);
 
 // Get all calendar events (for both users)
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   try {
-    const events = db.prepare(`
-      SELECT
-        calendar_events.*,
-        users.name as user_name
-      FROM calendar_events
-      JOIN users ON calendar_events.user_id = users.id
-      ORDER BY start_date ASC
-    `).all();
+    const { data: events, error } = await supabase
+      .from('calendar_events')
+      .select(`
+        *,
+        users (name)
+      `)
+      .order('start_date', { ascending: true });
 
-    res.json({ events });
+    if (error) throw error;
+
+    // Transform data to match expected format
+    const transformedEvents = events.map(event => ({
+      ...event,
+      user_name: event.users?.name
+    }));
+
+    res.json({ events: transformedEvents });
   } catch (error) {
     console.error('Error fetching events:', error);
     res.status(500).json({ error: 'Failed to fetch events' });
@@ -27,20 +34,28 @@ router.get('/', (req, res) => {
 });
 
 // Get events for today
-router.get('/today', (req, res) => {
+router.get('/today', async (req, res) => {
   try {
     const today = new Date().toISOString().split('T')[0];
-    const events = db.prepare(`
-      SELECT
-        calendar_events.*,
-        users.name as user_name
-      FROM calendar_events
-      JOIN users ON calendar_events.user_id = users.id
-      WHERE DATE(start_date) = DATE(?)
-      ORDER BY start_date ASC
-    `).all(today);
+    const { data: events, error } = await supabase
+      .from('calendar_events')
+      .select(`
+        *,
+        users (name)
+      `)
+      .gte('start_date', `${today}T00:00:00`)
+      .lt('start_date', `${today}T23:59:59`)
+      .order('start_date', { ascending: true });
 
-    res.json({ events });
+    if (error) throw error;
+
+    // Transform data to match expected format
+    const transformedEvents = events.map(event => ({
+      ...event,
+      user_name: event.users?.name
+    }));
+
+    res.json({ events: transformedEvents });
   } catch (error) {
     console.error('Error fetching today events:', error);
     res.status(500).json({ error: 'Failed to fetch today events' });
@@ -48,7 +63,7 @@ router.get('/today', (req, res) => {
 });
 
 // Create new calendar event
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
   try {
     const { title, description, start_date, end_date, location } = req.body;
     const userId = req.user.id;
@@ -57,21 +72,31 @@ router.post('/', (req, res) => {
       return res.status(400).json({ error: 'Title and start date are required' });
     }
 
-    const result = db.prepare(`
-      INSERT INTO calendar_events (title, description, start_date, end_date, location, user_id)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `).run(title, description || null, start_date, end_date || null, location || null, userId);
+    const { data: newEvent, error } = await supabase
+      .from('calendar_events')
+      .insert([{
+        title,
+        description: description || null,
+        start_date,
+        end_date: end_date || null,
+        location: location || null,
+        user_id: userId
+      }])
+      .select(`
+        *,
+        users (name)
+      `)
+      .single();
 
-    const newEvent = db.prepare(`
-      SELECT
-        calendar_events.*,
-        users.name as user_name
-      FROM calendar_events
-      JOIN users ON calendar_events.user_id = users.id
-      WHERE calendar_events.id = ?
-    `).get(result.lastInsertRowid);
+    if (error) throw error;
 
-    res.status(201).json({ event: newEvent });
+    // Transform data to match expected format
+    const transformedEvent = {
+      ...newEvent,
+      user_name: newEvent.users?.name
+    };
+
+    res.status(201).json({ event: transformedEvent });
   } catch (error) {
     console.error('Error creating event:', error);
     res.status(500).json({ error: 'Failed to create event' });
@@ -79,32 +104,48 @@ router.post('/', (req, res) => {
 });
 
 // Update calendar event
-router.put('/:id', (req, res) => {
+router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const { title, description, start_date, end_date, location } = req.body;
 
-    const event = db.prepare('SELECT * FROM calendar_events WHERE id = ?').get(id);
-    if (!event) {
+    // Check if event exists
+    const { data: existingEvent, error: fetchError } = await supabase
+      .from('calendar_events')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (fetchError || !existingEvent) {
       return res.status(404).json({ error: 'Event not found' });
     }
 
-    db.prepare(`
-      UPDATE calendar_events
-      SET title = ?, description = ?, start_date = ?, end_date = ?, location = ?, updated_at = CURRENT_TIMESTAMP
-      WHERE id = ?
-    `).run(title, description || null, start_date, end_date || null, location || null, id);
+    // Update event
+    const { data: updatedEvent, error } = await supabase
+      .from('calendar_events')
+      .update({
+        title,
+        description: description || null,
+        start_date,
+        end_date: end_date || null,
+        location: location || null
+      })
+      .eq('id', id)
+      .select(`
+        *,
+        users (name)
+      `)
+      .single();
 
-    const updatedEvent = db.prepare(`
-      SELECT
-        calendar_events.*,
-        users.name as user_name
-      FROM calendar_events
-      JOIN users ON calendar_events.user_id = users.id
-      WHERE calendar_events.id = ?
-    `).get(id);
+    if (error) throw error;
 
-    res.json({ event: updatedEvent });
+    // Transform data to match expected format
+    const transformedEvent = {
+      ...updatedEvent,
+      user_name: updatedEvent.users?.name
+    };
+
+    res.json({ event: transformedEvent });
   } catch (error) {
     console.error('Error updating event:', error);
     res.status(500).json({ error: 'Failed to update event' });
@@ -112,16 +153,28 @@ router.put('/:id', (req, res) => {
 });
 
 // Delete calendar event
-router.delete('/:id', (req, res) => {
+router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
 
-    const event = db.prepare('SELECT * FROM calendar_events WHERE id = ?').get(id);
-    if (!event) {
+    // Check if event exists
+    const { data: existingEvent, error: fetchError } = await supabase
+      .from('calendar_events')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (fetchError || !existingEvent) {
       return res.status(404).json({ error: 'Event not found' });
     }
 
-    db.prepare('DELETE FROM calendar_events WHERE id = ?').run(id);
+    // Delete event
+    const { error } = await supabase
+      .from('calendar_events')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
 
     res.json({ message: 'Event deleted successfully' });
   } catch (error) {

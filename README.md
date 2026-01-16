@@ -9,12 +9,13 @@ Een moderne familie-app voor Jesse en Monika om samen te werken aan agenda's, bo
 - **💬 AI Chat**: Vraag de AI-assistent om hulp met planning en boodschappen
 - **👥 Multi-user**: Beide gebruikers kunnen inloggen en samenwerken
 - **🔐 Veilig**: JWT-authenticatie en wachtwoord hashing
+- **☁️ Cloud Database**: Supabase PostgreSQL database voor real-time synchronisatie
 
 ## 🚀 Technologie Stack
 
 ### Backend
 - Node.js + Express
-- SQLite database
+- Supabase (PostgreSQL) database
 - JWT authenticatie
 - Claude AI (Anthropic) voor chat functionaliteit
 
@@ -29,6 +30,7 @@ Een moderne familie-app voor Jesse en Monika om samen te werken aan agenda's, bo
 
 ### Vereisten
 - Node.js 18+ en npm
+- Een Supabase account en project
 - Een Anthropic API key (voor AI chat functionaliteit)
 
 ### 1. Repository clonen
@@ -38,7 +40,18 @@ git clone <repository-url>
 cd FamilyApp
 ```
 
-### 2. Backend Setup
+### 2. Supabase Database Setup
+
+**⚠️ BELANGRIJK: Doe dit eerst!**
+
+Volg de instructies in [SUPABASE_SETUP.md](./SUPABASE_SETUP.md) om je Supabase database op te zetten.
+
+Samenvatting:
+1. Ga naar https://supabase.com/dashboard/project/prjhsnkudzmphnnhyicj
+2. Open de SQL Editor
+3. Voer de SQL uit het bestand `backend/supabase-migration.sql` uit
+
+### 3. Backend Setup
 
 ```bash
 cd backend
@@ -46,10 +59,8 @@ cd backend
 # Dependencies installeren
 npm install
 
-# .env file aanmaken
-cp .env.example .env
-
-# Bewerk .env en voeg je Anthropic API key toe
+# .env file is al geconfigureerd met Supabase credentials
+# Voeg alleen je Anthropic API key toe
 nano .env
 ```
 
@@ -60,7 +71,7 @@ ANTHROPIC_API_KEY=sk-ant-xxxxx
 
 Je kunt een API key krijgen op: https://console.anthropic.com/
 
-### 3. Frontend Setup
+### 4. Frontend Setup
 
 ```bash
 cd ../frontend
@@ -68,8 +79,7 @@ cd ../frontend
 # Dependencies installeren
 npm install
 
-# .env file aanmaken (optioneel, gebruikt standaard localhost:3000)
-cp .env.example .env
+# .env file is al geconfigureerd
 ```
 
 ## 🎯 Applicatie Starten
@@ -82,6 +92,12 @@ npm run dev
 ```
 
 De backend draait nu op: http://localhost:3000
+
+Je zou moeten zien:
+```
+✅ Supabase client initialized successfully
+🔗 Connected to: https://prjhsnkudzmphnnhyicj.supabase.co
+```
 
 ### Frontend starten (in een nieuwe terminal)
 
@@ -155,26 +171,28 @@ De frontend draait nu op: http://localhost:5173
 
 ## 🗄️ Database Schema
 
-De SQLite database bevat de volgende tabellen:
+De Supabase PostgreSQL database bevat de volgende tabellen:
 
-- **users** - Gebruikers (Jesse en Monika)
+- **users** - Gebruikers (Jesse en Monika) met UUID primary keys
 - **calendar_events** - Agenda afspraken
 - **shopping_items** - Boodschappenlijst items
 - **chat_history** - AI chat geschiedenis
 
-## 🎨 Screenshots
+Zie [SUPABASE_SETUP.md](./SUPABASE_SETUP.md) voor het complete schema.
 
-### Dashboard
-Overzicht van vandaag's afspraken en actieve boodschappen
+## ☁️ Supabase Features
 
-### Agenda
-Beheer alle afspraken met datum, tijd en locatie
+### Voordelen
+- **Cloud Database**: Toegankelijk vanaf elk device
+- **Real-time**: Updates worden direct gesynchroniseerd
+- **Auto Backup**: Automatische backups van je data
+- **Schaalbaar**: Groeit mee met je gebruik
+- **Veilig**: Row Level Security ingebouwd
 
-### Boodschappenlijst
-Houd bij wat er gekocht moet worden
-
-### AI Chat
-Intelligente assistent die helpt met planning
+### Database Beheren
+- Bekijk je data: https://supabase.com/dashboard/project/prjhsnkudzmphnnhyicj
+- Klik op "Table Editor" om data te bekijken en bewerken
+- Gebruik "SQL Editor" voor geavanceerde queries
 
 ## 🔒 Beveiliging
 
@@ -182,17 +200,23 @@ Intelligente assistent die helpt met planning
 - JWT tokens voor authenticatie
 - Tokens verlopen na 7 dagen
 - CORS ingeschakeld voor frontend communicatie
+- Row Level Security (RLS) in Supabase
+- Alle database queries gebruiken prepared statements
 
 ## 🚀 Production Deployment
 
 Voor production deployment:
 
-1. **Backend**:
-   - Verander `JWT_SECRET` in `.env`
-   - Configureer een production database (bijv. PostgreSQL)
-   - Deploy naar een Node.js hosting platform (bijv. Railway, Render, Heroku)
+1. **Supabase Database**:
+   - Database is al in de cloud en production-ready!
+   - Geen extra configuratie nodig
 
-2. **Frontend**:
+2. **Backend**:
+   - Verander `JWT_SECRET` in `.env` naar een sterke random string
+   - Deploy naar een Node.js hosting platform (bijv. Railway, Render, Heroku)
+   - Voeg environment variabelen toe (SUPABASE_URL, SUPABASE_ANON_KEY, JWT_SECRET, ANTHROPIC_API_KEY)
+
+3. **Frontend**:
    - Update `VITE_API_URL` naar je production API URL
    - Build de frontend: `npm run build`
    - Deploy de `dist` folder naar een static hosting (bijv. Netlify, Vercel)
@@ -200,6 +224,7 @@ Voor production deployment:
 ## 📝 TODO / Toekomstige Features
 
 - [ ] Push notificaties voor afspraken
+- [ ] Real-time updates (Supabase Realtime)
 - [ ] Gedeelde foto's en bestanden
 - [ ] Kalender weergave (maand/week view)
 - [ ] Herhalende afspraken
@@ -207,6 +232,8 @@ Voor production deployment:
 - [ ] Export boodschappenlijst
 - [ ] Dark mode
 - [ ] Mobile app (React Native)
+- [ ] Voice input voor boodschappen
+- [ ] Delen van specifieke lijsten met vrienden/familie
 
 ## 🤝 Ontwikkeld voor
 
@@ -218,7 +245,9 @@ Deze app is gemaakt voor persoonlijk gebruik.
 
 ## 💡 Support
 
-Voor vragen of problemen, open een issue in deze repository.
+Voor vragen of problemen:
+- Check [SUPABASE_SETUP.md](./SUPABASE_SETUP.md) voor database setup hulp
+- Open een issue in deze repository
 
 ---
 
