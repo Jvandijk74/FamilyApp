@@ -16,9 +16,8 @@ VALUE: https://prjhsnkudzmphnnhyicj.supabase.co
 NAME: SUPABASE_ANON_KEY
 VALUE: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InByamhzbmt1ZHptcGhubmh5aWNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg1NDg2MTMsImV4cCI6MjA4NDEyNDYxM30.5AFNZK5Ae0nJdPLyrCqo5dg9-TAOuRU_1p0_ro2SZyE
 
-NAME: ANTHROPIC_API_KEY
-VALUE: sk-ant-jouw-key-hier
-(Haal je key op van https://console.anthropic.com/)
+NAME: GOOGLE_API_KEY
+VALUE: AIzaSyBuU77JaeqExvJAzGoVFkkGUaseKpQ6SbQ
 
 
 ============================================
@@ -43,7 +42,7 @@ PORT=3000
 JWT_SECRET=familie-app-jwt-production-secret-2024-verander-dit-naar-random-string
 SUPABASE_URL=https://prjhsnkudzmphnnhyicj.supabase.co
 SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InByamhzbmt1ZHptcGhubmh5aWNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg1NDg2MTMsImV4cCI6MjA4NDEyNDYxM30.5AFNZK5Ae0nJdPLyrCqo5dg9-TAOuRU_1p0_ro2SZyE
-ANTHROPIC_API_KEY=sk-ant-jouw-key-hier
+GOOGLE_API_KEY=AIzaSyBuU77JaeqExvJAzGoVFkkGUaseKpQ6SbQ
 
 --- FRONTEND ---
 VITE_API_URL=https://jouw-backend-url.vercel.app/api
@@ -57,9 +56,10 @@ VITE_API_URL=https://jouw-backend-url.vercel.app/api
     Verander dit naar een sterke random string!
     Gebruik https://randomkeygen.com/
 
-⚠️  ANTHROPIC_API_KEY:
-    Krijg je van https://console.anthropic.com/
-    Als je AI chat niet nu wilt, laat dan leeg
+✅  GOOGLE_API_KEY:
+    Je Google Gemini API key is al ingevuld!
+    Gratis te gebruiken met dagelijkse limiet
+    Krijg je van: https://aistudio.google.com/app/apikey
 
 ⚠️  VITE_API_URL:
     Moet eindigen met /api
@@ -67,3 +67,20 @@ VITE_API_URL=https://jouw-backend-url.vercel.app/api
     Voorbeeld: https://familyapp-backend-abc123.vercel.app/api
 
 ✅  SUPABASE credentials zijn al ingevuld en werken!
+
+
+============================================
+  GOOGLE GEMINI API INFO
+============================================
+
+De app gebruikt nu Google Gemini (gemini-pro model) in plaats van Anthropic Claude.
+
+Voordelen:
+- ✅ Gratis tier beschikbaar (60 requests per minuut)
+- ✅ Geen credit card nodig voor gratis gebruik
+- ✅ Goede Nederlands support
+- ✅ Snel en betrouwbaar
+
+Je API key: AIzaSyBuU77JaeqExvJAzGoVFkkGUaseKpQ6SbQ
+
+Gebruik checken: https://aistudio.google.com/app/apikey

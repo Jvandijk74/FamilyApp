@@ -17,9 +17,9 @@ Complete stap-voor-stap instructies om FamilyApp te deployen op Vercel via Git (
 7. Klik op **"Run"**
 8. ✅ Je database is nu klaar!
 
-### 2. Anthropic API Key (optioneel voor AI chat)
+### 2. Google Gemini API Key (optioneel voor AI chat)
 
-1. Ga naar: https://console.anthropic.com/
+1. Ga naar: https://aistudio.google.com/app/apikey
 2. Maak een account of log in
 3. Ga naar "API Keys"
 4. Klik op "Create Key"
@@ -56,7 +56,7 @@ Complete stap-voor-stap instructies om FamilyApp te deployen op Vercel via Git (
 | `JWT_SECRET` | `familie-app-jwt-production-secret-2024-verander-dit-naar-random-string` |
 | `SUPABASE_URL` | `https://prjhsnkudzmphnnhyicj.supabase.co` |
 | `SUPABASE_ANON_KEY` | `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InByamhzbmt1ZHptcGhubmh5aWNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg1NDg2MTMsImV4cCI6MjA4NDEyNDYxM30.5AFNZK5Ae0nJdPLyrCqo5dg9-TAOuRU_1p0_ro2SZyE` |
-| `ANTHROPIC_API_KEY` | `sk-ant-jouw-key-hier` (of laat leeg als je AI chat niet nu wilt) |
+| `GOOGLE_API_KEY` | `AIzaSyBuU77JaeqExvJAzGoVFkkGUaseKpQ6SbQ` (of laat leeg als je AI chat niet nu wilt) |
 
 **Voor elk variable:**
 1. Vul de **Name** in (bijv: `PORT`)
@@ -155,7 +155,7 @@ PORT=3000
 JWT_SECRET=familie-app-jwt-production-secret-2024-verander-dit-naar-random-string
 SUPABASE_URL=https://prjhsnkudzmphnnhyicj.supabase.co
 SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InByamhzbmt1ZHptcGhubmh5aWNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg1NDg2MTMsImV4cCI6MjA4NDEyNDYxM30.5AFNZK5Ae0nJdPLyrCqo5dg9-TAOuRU_1p0_ro2SZyE
-ANTHROPIC_API_KEY=sk-ant-jouw-key-hier
+GOOGLE_API_KEY=AIzaSyBuU77JaeqExvJAzGoVFkkGUaseKpQ6SbQ
 ```
 
 ### Frontend Environment Variables
@@ -194,9 +194,9 @@ VITE_API_URL=https://jouw-backend-url.vercel.app/api
 **Probleem:** Chat geeft error over API key
 
 **Oplossing:**
-1. Zorg dat je een Anthropic API key hebt
+1. Zorg dat je een Google Gemini API key hebt
 2. Ga naar Vercel Dashboard → backend project → **Settings** → **Environment Variables**
-3. Voeg `ANTHROPIC_API_KEY` toe met je key
+3. Voeg `GOOGLE_API_KEY` toe met je key
 4. **Redeploy** de backend
 
 ### Database errors
@@ -249,7 +249,7 @@ Voordat je de app aan anderen geeft:
 - [ ] Beide accounts (Jesse & Monika) aangemaakt
 - [ ] Agenda functie getest
 - [ ] Boodschappen functie getest
-- [ ] AI Chat getest (als Anthropic key is toegevoegd)
+- [ ] AI Chat getest (als Google Gemini key is toegevoegd)
 - [ ] `JWT_SECRET` veranderd naar een sterke random string
 
 ---
@@ -263,11 +263,11 @@ https://randomkeygen.com/
 
 Kies een key uit "CodeIgniter Encryption Keys" (256-bit)
 
-### Anthropic API Kosten
+### Google Gemini API Kosten
 
 - Je betaalt per gebruik (pay-as-you-go)
 - Ongeveer $0.003 per chat bericht
-- Zet een spending limit in je Anthropic account!
+- Zet een spending limit in je Google Gemini account!
 
 ### Custom Domain
 

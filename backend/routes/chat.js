@@ -1,5 +1,5 @@
 const express = require('express');
-const Anthropic = require('@anthropic-ai/sdk');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 const supabase = require('../database');
 const { authenticateToken } = require('../middleware/auth');
 
@@ -8,10 +8,8 @@ const router = express.Router();
 // All routes require authentication
 router.use(authenticateToken);
 
-// Initialize Anthropic client
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY || '',
-});
+// Initialize Google Gemini client
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY || '');
 
 // Helper function to get context data
 async function getContextData() {
@@ -137,9 +135,9 @@ router.post('/', async (req, res) => {
     }
 
     // Check if API key is configured
-    if (!process.env.ANTHROPIC_API_KEY) {
+    if (!process.env.GOOGLE_API_KEY) {
       return res.status(500).json({
-        error: 'AI chat is not configured. Please add ANTHROPIC_API_KEY to environment variables.'
+        error: 'AI chat is not configured. Please add GOOGLE_API_KEY to environment variables.'
       });
     }
 
@@ -157,27 +155,37 @@ router.post('/', async (req, res) => {
       .order('created_at', { ascending: false })
       .limit(5);
 
-    // Build messages array (reverse to get chronological order)
-    const messages = [];
+    // Get the Gemini model
+    const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+
+    // Build chat history for Gemini
+    const chatHistory = [];
     if (recentHistory) {
       recentHistory.reverse().forEach(chat => {
-        messages.push({ role: 'user', content: chat.message });
-        messages.push({ role: 'assistant', content: chat.response });
+        chatHistory.push({
+          role: 'user',
+          parts: [{ text: chat.message }]
+        });
+        chatHistory.push({
+          role: 'model',
+          parts: [{ text: chat.response }]
+        });
       });
     }
 
-    // Add current message
-    messages.push({ role: 'user', content: message });
-
-    // Call Claude API
-    const response = await anthropic.messages.create({
-      model: 'claude-3-5-sonnet-20241022',
-      max_tokens: 1024,
-      system: systemPrompt,
-      messages: messages
+    // Start chat with history and system prompt
+    const chat = model.startChat({
+      history: chatHistory,
+      generationConfig: {
+        maxOutputTokens: 1024,
+        temperature: 0.7,
+      },
     });
 
-    const aiResponse = response.content[0].text;
+    // Send message with system prompt prepended
+    const fullMessage = `${systemPrompt}\n\nGebruiker vraagt: ${message}`;
+    const result = await chat.sendMessage(fullMessage);
+    const aiResponse = result.response.text();
 
     // Save chat history
     await supabase
@@ -198,13 +206,13 @@ router.post('/', async (req, res) => {
   } catch (error) {
     console.error('Error in chat:', error);
 
-    if (error.status === 401) {
+    if (error.message?.includes('API key')) {
       return res.status(500).json({
-        error: 'Invalid API key. Please check your ANTHROPIC_API_KEY.'
+        error: 'Invalid API key. Please check your GOOGLE_API_KEY.'
       });
     }
 
-    res.status(500).json({ error: 'Failed to process chat message' });
+    res.status(500).json({ error: 'Failed to process chat message: ' + error.message });
   }
 });
 
