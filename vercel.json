@@ -1,8 +1,7 @@
 {
   "version": 2,
-  "installCommand": "npm install --prefix backend && npm install --prefix frontend",
-  "buildCommand": "npm run build --prefix frontend",
-  "outputDirectory": "frontend/dist",
+  "buildCommand": "npm install --workspaces && npm run build --workspace=frontend && cp -r frontend/dist dist",
+  "outputDirectory": "dist",
   "functions": {
     "backend/server.js": {
       "memory": 1024,
